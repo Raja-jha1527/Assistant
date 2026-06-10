@@ -1,0 +1,966 @@
+from ultralytics import YOLO
+import cv2
+import sys
+sys.path.append(r'C:\\Users\\Abhishek Jha\\Downloads')
+from intents import  speak ,take_Commend
+import webbrowser
+import speech_recognition as sr 
+import pyautogui as pg
+import pytesseract
+import os
+import urllib
+import random
+import datetime
+import difflib
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+import time
+import psutil
+def take_Commend():
+    r = sr.Recognizer()
+
+    with sr.Microphone() as source:
+        print("Listening...")
+        r.adjust_for_ambient_noise(source, duration=1)
+
+        try:
+            audio = r.listen(source, timeout=5, phrase_time_limit=5)
+        except sr.WaitTimeoutError:
+            print("No speech detected...")
+            return "None"
+
+    try:
+        print("Understanding...")
+        text = r.recognize_google(audio, language='en-in')
+        print("You said:", text)
+        return text
+
+    except sr.UnknownValueError:
+        print("Could not understand audio")
+        return "None"
+
+    except sr.RequestError:
+        print("Network error")
+        return "None"
+
+getting = { "hi": ["Hello! How can I help you today?", "Hi there! Systems are online.", "Hello, sir. Ready for some coding?"],
+    "tumhara naam kya hai":["Jarvis","mai hu jarvis"],
+    "hello": ["Hi! Hope you're having a productive day.", "Hello! Jarvis at your service.", "Hi Raja! What's the plan?"],
+    "kaise ho": ["Main bilkul fit hoon! Aap kaise hain?", "Systems optimized hain, aap bataiye?", "Main toh hamesha mast hoon, aap sunao?"],
+    "kya haal hai": ["Sab badhiya! Aapka progress kaisa chal raha hai?", "Ekdam mast! Aapka din kaisa raha?", "All good! Ready to learn something new?"],
+    "oye": ["Ji sir, boliye?", "Yes! Jarvis is listening.", "Kya haal-chaal? sir"],
+    "namaste": ["Namaste! Kaise help kar sakta hoon aapki?", "Namaste sir! Hope aapka din accha ja raha ho."],
+    "hey jarvis": ["Yes, sir? Standing by.", "Hey! Ready to assist you.", "Hello! What's on your mind today?"],
+    "kaam shuru kare": ["Bilkul! Consistent rehna hi success ki chabi hai.", "Let's go! Focus mode on karte hain.", "Sure, chaliye kuch naya seekhte hain aaj."],
+    "bor ho raha hu": ["Psychology kehti hai ki boredom naye ideas ka raasta hai! Chaliye coding karte hain?", "Thoda break le lijiye, ya phir ek naya ML concept seekhein?"],
+    "help chahiye": ["Main hamesha yahi hoon. Bataiye kya problem hai?", "Helping you is my primary function. Boliye?", "Bina kisi hichkichahat ke puchiye, sir."],
+    "yo": ["Yo! What's up?", "Yo! Ready for action?"],
+    "sup": ["Not much, just waiting for your command.", "System's running smooth. What about you?"],
+    "ram ram": ["Ram Ram! Kaise hain aap?", "Ram Ram sir! Chaliye kaam shuru karte hain."],
+    "hi": ["Hello! How can I help you today?", "Hi there! Systems are online.", "Hello, sir. Ready for some coding?"],
+    "hello": ["Hi! Hope you're having a productive day.", "Hello! Jarvis at your service.", "Hi Raja! What's the plan?"],
+    "hey": ["Hey! What's up?", "Hey there! Ready to assist.", "Hello! Systems nominal."],
+    "hii": ["Hii! Ready for some action?", "Hi! Aapka swagat hai.", "Hii! All systems go."],
+    "hiiii": ["Whoa, that's a lot of i's! Hello anyway!", "Hi! Someone's energetic today.", "Hello sir!"],
+    "helloo": ["Hello! How's your energy level today?", "Hi! Ready to dive into some tasks?"],
+    "heyy": ["Heyy! What's on your mind?", "Yes sir? Ready when you are."],
+    "greetings": ["Greetings, sir. How may I assist?", "Greetings! Systems are fully operational."],
+    "kaise ho": ["Main bilkul fit hoon! Aap kaise hain?", "Systems optimized hain, aap bataiye?", "Main toh hamesha ready hoon, aap sunao?"],
+    "kya haal hai": ["Sab badhiya! Aapka progress kaisa chal raha hai?", "Ekdam mast! Aapka din kaisa raha?", "All good! Ready to learn something new?"],
+    "kya chal raha hai": ["Bas aapke commands ka intezar.", "Processing life... and code! Aap bataiye?", "Nothing much, just chilling in the cloud."],
+    "oye": ["Ji sir, boliye?", "Yes! Jarvis is listening.", "Oye! Kya haal-chaal?"],
+    "oi": ["Yes sir?", "Standing by.", "How can I help?"],
+    "namaste": ["Namaste! Kaise help kar sakta hoon aapki?", "Namaste sir! Hope aapka din accha ja raha ho."],
+    "ram ram": ["Ram Ram! Kaise hain aap?", "Ram Ram sir! Chaliye kaam shuru karte hain."],
+    "salam": ["Walekum Assalam! Boliye sir, kya seva karu?", "Salam! Hope you are doing great today."],
+    "hello bhai": ["Hello bhai! Kaise ho?", "Boliye mere dost, kya kaam hai?", "Hi! Systems ready hain."],
+    "kaisa hai": ["Main badhiya hoon, aap kaise ho Raja?", "Ekdam top class! Aap sunao?"],
+    "sab thik": ["Haan sir, sab control mein hai. Aapka kaisa chal raha hai?", "Everything is perfect. What about you?"],
+    "jarvis": ["At your service, sir.", "Yes, Raja? Ready for commands.", "System online. Waiting for your input."],
+    "hey jarvis": ["Yes, sir? Standing by.", "Hey! Ready to assist you.", "Hello! What's on your mind today?"],
+    "hello jarvis": ["Hello! How can I help you achieve your goals today?", "Hi! All modules are loaded."],
+    "wake up": ["Systems online. Good to see you, sir.", "I'm awake and ready for action!", "Always awake for you, sir."],
+    "are you there": ["For you, always.", "Standing by, sir.", "Yes, sir. Online and ready."],
+    "identify": ["I am Jarvis. Your personal AI companion.", "Identity confirmed: Jarvis. Creator: Raja Jha."],
+    "yo": ["Yo! What's up?", "Yo! Ready for action?", "Yo! What are we building today?"],
+    "sup": ["Not much, just waiting for your command.", "System's running smooth. What about you?", "Just processing some data."],
+    "wussup": ["All good in the digital world! You?", "Nothing much, sir. Ready for work?"],
+    "kkrh": ["Bas aapke message ka reply de raha hoon!", "Aapki help karne ki koshish. Aap batao?", "Nothing, just system maintenance."],
+    "kya kr rhe ho": ["Aapke orders ka wait, sir!", "Bas optimize ho raha hoon.", "Waiting for your next big idea."],
+    "helloo": ["Hi there! Let's get started.", "Hello! What's the move today?"],
+    "help": ["I'm here. Bataiye kya help chahiye?", "Don't worry, I've got your back. What's the issue?", "Helping you is my priority. Boliye."],
+    "bor ho raha hu": ["Psychology kehti hai boredom se creativity aati hai. Kuch naya code karein?", "Chaliye ek chess game khelte hain?", "Main hoon na! Let's talk about something interesting."],
+    "thak gaya hu": ["Thoda break le lijiye, sir. Health is important.", "Rest is part of the work. Main yahi hoon jab aap wapas aayein."],
+}
+day = {
+     "good morning": ["Good morning! A fresh start for new goals.", "Morning! Caffeine and code, perhaps?", "Good morning, sir. All systems nominal."],
+    "good evening": ["Good evening! How was your day?", "Evening, sir. Ready to wind down or more work?", "Good evening! System is ready for your commands."],
+    "good morning": ["Good morning! A fresh start for new goals.", "Morning! Caffeine and code, perhaps?", "Good morning, sir. All systems nominal."],
+    "gm": ["Good morning! Energy level check... 100%!", "GM sir! Let's make it a great day."],
+    "good afternoon": ["Good afternoon! Staying productive, I see?", "Afternoon, sir. Need a quick update?", "Good afternoon! Hope you had a good lunch."],
+    "good evening": ["Good evening! How was your day?", "Evening, sir. Ready to wind down or more work?", "Good evening! System is ready."],
+    "ge": ["Good evening, sir!", "GE! How can I help you tonight?"],
+    "good night": ["Good night, sir. Rest well.", "Shubh ratri! Milte hain kal subah.", "Good night! System standby mode mein ja raha hai."],
+    "gn": ["Good night! Sweet dreams of bug-free code.", "GN! See you tomorrow."],
+}
+date = {
+    "time kya ho raha hai": ["Abhi [TIME] ho raha hai, sir.", "Time check: [TIME].", "Sir, abhi [TIME] baje hain."],
+    "kya time hua": ["Abhi [TIME] ho raha hai.", "Ghadi mein [TIME] ho rahe hain, sir."],
+    "time batao": ["Zaroor sir, abhi [TIME] ho raha hai.", "Right now it's [TIME]."],
+    "samay kya hai": ["Abhi ka samay [TIME] hai.", "Vartaman samay [TIME] hai, sir."],
+    "kitne baj rahe hain": ["Sir, abhi [TIME] baj rahe hain.", "[TIME] ho gaye hain."],
+    "batao kitne baje": ["Abhi [TIME] baje hain, sir.", "Current time is [TIME]."],
+    "time": ["Abhi [TIME] ho raha hai.", "It's [TIME], sir."],
+    "kya baj raha hai": ["Abhi [TIME] ho raha hai.", "Sir, [TIME] baj rahe hain."],
+    "aaj kya date hai": ["Aaj [DATE] hai, sir.", "Today's date is [DATE]."],
+    "aaj ki tarikh": ["Aaj [DATE] tarikh hai.", "Sir, aaj ki date [DATE] hai."],
+    "tarikh batao": ["Aaj [DATE] hai.", "Today is [DATE], sir."],
+    "date kya hai": ["Sir, aaj [DATE] hai.", "It's [DATE] today."],
+    "aaj kaun sa din hai": ["Aaj [DATE] hai aur din [DAY] hai.", "Today is [DAY], [DATE]."],
+    "kaun sa saal chal raha hai": ["Abhi [YEAR] chal raha hai, sir.", "It's [YEAR]."],
+    "aaj kya din hai": ["Aaj [DAY] hai, sir.", "Today is [DAY]."],
+    "current date": ["Today is [DATE].", "Aaj ki date [DATE] hai, sir."],
+    "din kaunsa hai": ["Sir, aaj [DAY] hai."],
+    "date aur time": ["Sir, aaj [DATE] hai aur abhi [TIME] ho raha hai.", "Date: [DATE], Time: [TIME]."],
+    "aaj ka mahina": ["Abhi [MONTH] ka mahina chal raha hai, sir."],
+    "aaj ki info": ["Aaj [DAY] hai, [DATE] tarikh, aur abhi [TIME] baje hain."],
+    "time kya hua": ["Waqt ki sui [TIME] par hai, sir.", "Abhi [TIME] ho raha hai."]
+}
+commands = {
+"open youtube": [("Opening YouTube", lambda: webbrowser.open("https://www.youtube.com"))],
+
+"open google": [("Opening Google", lambda: webbrowser.open("https://www.google.com"))],
+
+"open chatgpt": [("Opening ChatGPT", lambda: webbrowser.open("https://chat.openai.com"))],
+
+"open instagram": [("Opening Instagram", lambda: webbrowser.open("https://www.instagram.com"))],
+
+"open facebook": [("Opening Facebook", lambda: webbrowser.open("https://www.facebook.com"))],
+
+"open twitter": [("Opening Twitter", lambda: webbrowser.open("https://twitter.com"))],
+
+"open linkedin": [("Opening LinkedIn", lambda: webbrowser.open("https://www.linkedin.com"))],
+
+"open github": [("Opening GitHub", lambda: webbrowser.open("https://github.com"))],
+
+"open stackoverflow": [("Opening StackOverflow", lambda: webbrowser.open("https://stackoverflow.com"))],
+
+"open gmail": [("Opening Gmail", lambda: webbrowser.open("https://mail.google.com"))],
+
+"open amazon": [("Opening Amazon", lambda: webbrowser.open("https://www.amazon.in"))],
+
+"open flipkart": [("Opening Flipkart", lambda: webbrowser.open("https://www.flipkart.com"))],
+
+"open netflix": [("Opening Netflix", lambda: webbrowser.open("https://www.netflix.com"))],
+
+"open spotify": [("Opening Spotify", lambda: webbrowser.open("https://open.spotify.com"))],
+
+"open whatsapp": [("Opening WhatsApp Web", lambda: webbrowser.open("https://web.whatsapp.com"))],
+
+"open telegram": [("Opening Telegram Web", lambda: webbrowser.open("https://web.telegram.org"))],
+
+"open canva": [("Opening Canva", lambda: webbrowser.open("https://www.canva.com"))],
+
+"open coursera": [("Opening Coursera", lambda: webbrowser.open("https://www.coursera.org"))],
+
+"open udemy": [("Opening Udemy", lambda: webbrowser.open("https://www.udemy.com"))],
+
+"open geeksforgeeks": [("Opening GeeksforGeeks", lambda: webbrowser.open("https://www.geeksforgeeks.org"))],
+
+"open notepad": [("Opening Notepad", lambda: os.system("notepad"))],
+
+"open calculator": [("Opening Calculator", lambda: os.system("calc"))],
+
+"open command prompt": [("Opening Command Prompt", lambda: os.system("start cmd"))],
+
+"open powershell": [("Opening PowerShell", lambda: os.system("start powershell"))],
+
+"open control panel": [("Opening Control Panel", lambda: os.system("control"))],
+
+"open task manager": [("Opening Task Manager", lambda: os.system("taskmgr"))],
+
+"open paint": [("Opening Paint", lambda: os.system("mspaint"))],
+
+"open word": [("Opening MS Word", lambda: os.system("start winword"))],
+
+"open excel": [("Opening MS Excel", lambda: os.system("start excel"))],
+
+"open chrome": [("Opening Chrome", lambda: os.system("start chrome"))],
+
+"open edge": [("Opening Edge", lambda: os.system("start msedge"))],
+
+"open vscode": [("Opening VS Code", lambda: os.system("code"))],
+
+"open file explorer": [("Opening File Explorer", lambda: os.system("explorer"))],
+
+"open downloads": [("Opening Downloads folder", lambda: os.startfile(os.path.expanduser("~/Downloads")))],
+
+"open documents": [("Opening Documents folder", lambda: os.startfile(os.path.expanduser("~/Documents")))],
+
+"open desktop": [("Opening Desktop folder", lambda: os.startfile(os.path.expanduser("~/Desktop")))],
+
+"open pictures": [("Opening Pictures folder", lambda: os.startfile(os.path.expanduser("~/Pictures")))],
+
+"open music": [("Opening Music folder", lambda: os.startfile(os.path.expanduser("~/Music")))],
+
+"open videos": [("Opening Videos folder", lambda: os.startfile(os.path.expanduser("~/Videos")))],
+
+"open settings": [("Opening Settings", lambda: os.system("start ms-settings:"))],
+
+"open bluetooth settings": [("Opening Bluetooth Settings", lambda: os.system("start ms-settings:bluetooth"))],
+
+"open wifi settings": [("Opening WiFi Settings", lambda: os.system("start ms-settings:network-wifi"))],
+
+"open display settings": [("Opening Display Settings", lambda: os.system("start ms-settings:display"))],
+
+"open sound settings": [("Opening Sound Settings", lambda: os.system("start ms-settings:sound"))],
+
+"open update settings": [("Opening Windows Update", lambda: os.system("start ms-settings:windowsupdate"))],
+
+"open camera": [("Opening Camera", lambda: os.system("start microsoft.windows.camera:"))],
+
+"open maps": [("Opening Maps", lambda: os.system("start bingmaps:"))],
+
+"open clock": [("Opening Clock", lambda: os.system("start ms-clock:"))],
+
+"open snipping tool": [("Opening Snipping Tool", lambda: os.system("start snippingtool"))],
+
+"open onedrive": [("Opening OneDrive", lambda: os.system("start onedrive"))],
+
+"open google colab": [("Opening Google Colab", lambda: webbrowser.open("https://colab.research.google.com"))],
+
+"open google drive": [("Opening Google Drive", lambda: webbrowser.open("https://drive.google.com"))],
+
+"open blackbox": [("Opening Blackbox AI", lambda: webbrowser.open("https://www.blackbox.ai"))],
+
+"open whatsapp": [("Opening WhatsApp Web", lambda: webbrowser.open("https://web.whatsapp.com"))],
+
+"open vs code": [("Opening VS Code", lambda: os.system("code"))],
+
+"open chrome": [("Opening Chrome", lambda: os.system("start chrome"))],
+
+"open edge": [("Opening Edge", lambda: os.system("start msedge"))],
+
+"open file explorer": [("Opening File Explorer", lambda: os.system("explorer"))],
+
+"open downloads": [("Opening Downloads", lambda: os.startfile(os.path.expanduser("~/Downloads")))],
+
+"open documents": [("Opening Documents", lambda: os.startfile(os.path.expanduser("~/Documents")))],
+
+"open desktop": [("Opening Desktop", lambda: os.startfile(os.path.expanduser("~/Desktop")))],
+
+"open settings": [("Opening Settings", lambda: os.system("start ms-settings:"))],
+
+"open bluetooth settings": [("Opening Bluetooth Settings", lambda: os.system("start ms-settings:bluetooth"))],
+
+"open wifi settings": [("Opening WiFi Settings", lambda: os.system("start ms-settings:network-wifi"))],
+
+"open device manager": [("Opening Device Manager", lambda: os.system("start devmgmt.msc"))],
+
+"open disk management": [("Opening Disk Management", lambda: os.system("start diskmgmt.msc"))],
+
+"open registry editor": [("Opening Registry Editor", lambda: os.system("start regedit"))],
+
+"open services": [("Opening Services", lambda: os.system("start services.msc"))],
+
+"youtube kholo": [("Opening YouTube", lambda: webbrowser.open("https://www.youtube.com"))],
+
+"kya tum youtube khol sakte ho":[("Youtube khol raha hu", lambda: webbrowser.open("https://www.youtube.com"))],
+
+"google kholo": [("Opening Google", lambda: webbrowser.open("https://www.google.com"))],
+
+"chatgpt kholo": [("Opening ChatGPT", lambda: webbrowser.open("https://chat.openai.com"))],
+
+"instagram kholo": [("Opening Instagram", lambda: webbrowser.open("https://www.instagram.com"))],
+
+"facebook kholo": [("Opening Facebook", lambda: webbrowser.open("https://www.facebook.com"))],
+
+"twitter kholo": [("Opening Twitter", lambda: webbrowser.open("https://twitter.com"))],
+
+"linkedin kholo": [("Opening LinkedIn", lambda: webbrowser.open("https://www.linkedin.com"))],
+
+"github kholo": [("Opening GitHub", lambda: webbrowser.open("https://github.com"))],
+
+"stackoverflow kholo": [("Opening StackOverflow", lambda: webbrowser.open("https://stackoverflow.com"))],
+
+"gmail kholo": [("Opening Gmail", lambda: webbrowser.open("https://mail.google.com"))],
+
+"amazon kholo": [("Opening Amazon", lambda: webbrowser.open("https://www.amazon.in"))],
+
+"flipkart kholo": [("Opening Flipkart", lambda: webbrowser.open("https://www.flipkart.com"))],
+
+"netflix kholo": [("Opening Netflix", lambda: webbrowser.open("https://www.netflix.com"))],
+
+"spotify kholo": [("Opening Spotify", lambda: webbrowser.open("https://open.spotify.com"))],
+
+"whatsapp kholo": [("Opening WhatsApp Web", lambda: webbrowser.open("https://web.whatsapp.com"))],
+
+"telegram kholo": [("Opening Telegram Web", lambda: webbrowser.open("https://web.telegram.org"))],
+
+"canva kholo": [("Opening Canva", lambda: webbrowser.open("https://www.canva.com"))],
+
+"coursera kholo": [("Opening Coursera", lambda: webbrowser.open("https://www.coursera.org"))],
+
+"udemy kholo": [("Opening Udemy", lambda: webbrowser.open("https://www.udemy.com"))],
+
+"geeksforgeeks kholo": [("Opening GeeksforGeeks", lambda: webbrowser.open("https://www.geeksforgeeks.org"))]
+,
+"notepad kholo": [("Opening Notepad", lambda: os.system("notepad"))],
+
+"calculator kholo": [("Opening Calculator", lambda: os.system("calc"))],
+
+"command prompt kholo": [("Opening Command Prompt", lambda: os.system("start cmd"))],
+
+"powershell kholo": [("Opening PowerShell", lambda: os.system("start powershell"))],
+
+"control panel kholo": [("Opening Control Panel", lambda: os.system("control"))],
+
+"task manager kholo": [("Opening Task Manager", lambda: os.system("taskmgr"))],
+
+"paint kholo": [("Opening Paint", lambda: os.system("mspaint"))],
+
+"word kholo": [("Opening MS Word", lambda: os.system("start winword"))],
+
+"excel kholo": [("Opening MS Excel", lambda: os.system("start excel"))],
+
+"chrome kholo": [("Opening Chrome", lambda: os.system("start chrome"))],
+
+"edge kholo": [("Opening Edge", lambda: os.system("start msedge"))],
+
+"vscode kholo": [("Opening VS Code", lambda: os.system("code"))],
+
+"file explorer kholo": [("Opening File Explorer", lambda: os.system("explorer"))],
+
+"downloads folder kholo": [("Opening Downloads folder", lambda: os.startfile(os.path.expanduser("~/Downloads")))],
+
+"documents folder kholo": [("Opening Documents folder", lambda: os.startfile(os.path.expanduser("~/Documents")))],
+
+"desktop folder kholo": [("Opening Desktop folder", lambda: os.startfile(os.path.expanduser("~/Desktop")))],
+
+"pictures folder kholo": [("Opening Pictures folder", lambda: os.startfile(os.path.expanduser("~/Pictures")))],
+
+"music folder kholo": [("Opening Music folder", lambda: os.startfile(os.path.expanduser("~/Music")))],
+
+"videos folder kholo": [("Opening Videos folder", lambda: os.startfile(os.path.expanduser("~/Videos")))],
+
+"settings kholo": [("Opening Settings", lambda: os.system("start ms-settings:"))],
+
+"bluetooth settings kholo": [("Opening Bluetooth Settings", lambda: os.system("start ms-settings:bluetooth"))],
+
+"wifi settings kholo": [("Opening WiFi Settings", lambda: os.system("start ms-settings:network-wifi"))],
+
+"display settings kholo": [("Opening Display Settings", lambda: os.system("start ms-settings:display"))],
+
+"sound settings kholo": [("Opening Sound Settings", lambda: os.system("start ms-settings:sound"))],
+
+"update settings kholo": [("Opening Windows Update", lambda: os.system("start ms-settings:windowsupdate"))],
+
+"camera kholo": [("Opening Camera", lambda: os.system("start microsoft.windows.camera:"))],
+
+"maps kholo": [("Opening Maps", lambda: os.system("start bingmaps:"))],
+
+"clock kholo": [("Opening Clock", lambda: os.system("start ms-clock:"))],
+
+"snipping tool kholo": [("Opening Snipping Tool", lambda: os.system("start snippingtool"))],
+
+"onedrive kholo": [("Opening OneDrive", lambda: os.system("start onedrive"))],
+
+"google colab kholo": [("Opening Google Colab", lambda: webbrowser.open("https://colab.research.google.com"))],
+
+"google drive kholo": [("Opening Google Drive", lambda: webbrowser.open("https://drive.google.com"))],
+
+"blackbox kholo": [("Opening Blackbox AI", lambda: webbrowser.open("https://www.blackbox.ai"))],
+
+"youtube band karo": [("YouTube band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"google band karo": [("Google band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"chatgpt band karo": [("ChatGPT band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"instagram band karo": [("Instagram band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"facebook band karo": [("Facebook band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"twitter band karo": [("Twitter band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"linkedin band karo": [("LinkedIn band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"github band karo": [("GitHub band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"stackoverflow band karo": [("StackOverflow band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"gmail band karo": [("Gmail band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"amazon band karo": [("Amazon band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"flipkart band karo": [("Flipkart band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"netflix band karo": [("Netflix band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"spotify band karo": [("Spotify band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"whatsapp band karo": [("WhatsApp band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"telegram band karo": [("Telegram band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"canva band karo": [("Canva band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"coursera band karo": [("Coursera band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"udemy band karo": [("Udemy band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"geeksforgeeks band karo": [("GeeksforGeeks band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"notepad band karo": [("Notepad band kiya ja raha hai", lambda: os.system("taskkill /f /im notepad.exe"))],
+
+"calculator band karo": [("Calculator band kiya ja raha hai", lambda: os.system("taskkill /f /im Calculator.exe"))],
+
+"command prompt band karo": [("Command Prompt band kiya ja raha hai", lambda: os.system("taskkill /f /im cmd.exe"))],
+
+"powershell band karo": [("PowerShell band kiya ja raha hai", lambda: os.system("taskkill /f /im powershell.exe"))],
+
+"control panel band karo": [("Control Panel band kiya ja raha hai", lambda: os.system("taskkill /f /im control.exe"))],
+
+"task manager band karo": [("Task Manager band kiya ja raha hai", lambda: os.system("taskkill /f /im Taskmgr.exe"))],
+
+"paint band karo": [("Paint band kiya ja raha hai", lambda: os.system("taskkill /f /im mspaint.exe"))],
+
+"word band karo": [("Word band kiya ja raha hai", lambda: os.system("taskkill /f /im WINWORD.exe"))],
+
+"excel band karo": [("Excel band kiya ja raha hai", lambda: os.system("taskkill /f /im EXCEL.exe"))],
+
+"chrome band karo": [("Chrome band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"edge band karo": [("Edge band kiya ja raha hai", lambda: os.system("taskkill /f /im msedge.exe"))],
+
+"vscode band karo": [("VS Code band kiya ja raha hai", lambda: os.system("taskkill /f /im Code.exe"))],
+
+"file explorer band karo": [("File Explorer band kiya ja raha hai", lambda: os.system("taskkill /f /im explorer.exe"))],
+
+"settings band karo": [("Settings band kiya ja raha hai", lambda: os.system("taskkill /f /im SystemSettings.exe"))],
+
+"camera band karo": [("Camera band kiya ja raha hai", lambda: os.system("taskkill /f /im WindowsCamera.exe"))],
+
+"maps band karo": [("Maps band kiya ja raha hai", lambda: os.system("taskkill /f /im Maps.exe"))],
+
+"clock band karo": [("Clock band kiya ja raha hai", lambda: os.system("taskkill /f /im ClockApp.exe"))],
+
+"snipping tool band karo": [("Snipping Tool band kiya ja raha hai", lambda: os.system("taskkill /f /im SnippingTool.exe"))],
+
+"onedrive band karo": [("OneDrive band kiya ja raha hai", lambda: os.system("taskkill /f /im OneDrive.exe"))],
+
+"google colab band karo": [("Google Colab band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"google drive band karo": [("Google Drive band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"blackbox band karo": [("Blackbox band kiya ja raha hai", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close youtube": [("Closing YouTube", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close google": [("Closing Google", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close chatgpt": [("Closing ChatGPT", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close instagram": [("Closing Instagram", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close facebook": [("Closing Facebook", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close twitter": [("Closing Twitter", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close linkedin": [("Closing LinkedIn", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close github": [("Closing GitHub", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close stackoverflow": [("Closing StackOverflow", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close gmail": [("Closing Gmail", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close amazon": [("Closing Amazon", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close flipkart": [("Closing Flipkart", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close netflix": [("Closing Netflix", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close spotify": [("Closing Spotify", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close whatsapp": [("Closing WhatsApp", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close telegram": [("Closing Telegram", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close canva": [("Closing Canva", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close coursera": [("Closing Coursera", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close udemy": [("Closing Udemy", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close geeksforgeeks": [("Closing GeeksforGeeks", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close notepad": [("Closing Notepad", lambda: os.system("taskkill /f /im notepad.exe"))],
+
+"close calculator": [("Closing Calculator", lambda: os.system("taskkill /f /im Calculator.exe"))],
+
+"close command prompt": [("Closing Command Prompt", lambda: os.system("taskkill /f /im cmd.exe"))],
+
+"close powershell": [("Closing PowerShell", lambda: os.system("taskkill /f /im powershell.exe"))],
+
+"close control panel": [("Closing Control Panel", lambda: os.system("taskkill /f /im control.exe"))],
+
+"close task manager": [("Closing Task Manager", lambda: os.system("taskkill /f /im Taskmgr.exe"))],
+
+"close paint": [("Closing Paint", lambda: os.system("taskkill /f /im mspaint.exe"))],
+
+"close word": [("Closing MS Word", lambda: os.system("taskkill /f /im WINWORD.exe"))],
+
+"close excel": [("Closing MS Excel", lambda: os.system("taskkill /f /im EXCEL.exe"))],
+
+"close chrome": [("Closing Chrome", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close edge": [("Closing Edge", lambda: os.system("taskkill /f /im msedge.exe"))],
+
+"close vscode": [("Closing VS Code", lambda: os.system("taskkill /f /im Code.exe"))],
+
+"close file explorer": [("Closing File Explorer", lambda: os.system("taskkill /f /im explorer.exe"))],
+
+"close settings": [("Closing Settings", lambda: os.system("taskkill /f /im SystemSettings.exe"))],
+
+"close camera": [("Closing Camera", lambda: os.system("taskkill /f /im WindowsCamera.exe"))],
+
+"close maps": [("Closing Maps", lambda: os.system("taskkill /f /im Maps.exe"))],
+
+"close clock": [("Closing Clock", lambda: os.system("taskkill /f /im ClockApp.exe"))],
+
+"close snipping tool": [("Closing Snipping Tool", lambda: os.system("taskkill /f /im SnippingTool.exe"))],
+
+"close onedrive": [("Closing OneDrive", lambda: os.system("taskkill /f /im OneDrive.exe"))],
+
+"close google colab": [("Closing Google Colab", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close google drive": [("Closing Google Drive", lambda: os.system("taskkill /f /im chrome.exe"))],
+
+"close blackbox": [("Closing Blackbox AI", lambda: os.system("taskkill /f /im chrome.exe"))],
+}
+commands_2 = {
+"camera me dekho": [
+    (
+        "",
+        lambda text: yolo(text)
+    )
+],
+"likho": [
+    (
+        "",
+        lambda text: type_wirte(text)
+    )
+],
+"type karo": [
+    (
+        "",
+        lambda text: type_wirte(text)
+    )
+],
+"sentence likho": [
+    (
+        "",
+        lambda text: youtube_search(text)
+    )
+],
+"youtube pe search karo": [
+    (
+        "",
+        lambda text: youtube_search(text)
+    )
+],
+"youtube band karo":[
+   (
+      "",
+      lambda text: youtube_close()
+      )
+],
+"piche karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"thoda piche karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"copy karo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"paste karo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"pesh karo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"cut karo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"undo karo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"redo karo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"save karo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"search karo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"naya tab kholo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"tab band karo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"agla tab": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"pichla tab": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"refresh karo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"full screen karo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"window band karo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"desktop dikhao": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"task manager kholo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"run kholo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"settings kholo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"lock pc": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"stop":[
+    ("",lambda text: system_shortcut(text))
+    ],
+
+"stop karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"play": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"play karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"screenshot lo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"new tab": [
+        ("",lambda text: system_shortcut(text))
+    ],
+"minimise karo": [
+        ("", lambda text: system_shortcut(text))
+    ],
+
+"screen minimize karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"minimize karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"or niche karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"or uper karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"niche karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"upar karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"scroll up": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"scroll down": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"upar scroll karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"niche scroll karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"top per jao": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"sabse niche jao": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"sabse upar jao": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"save karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"save": [
+        ("",lambda text: system_shortcut(text))
+    ],
+"sev": [
+        ("",lambda text: system_shortcut(text))
+    ],
+"sev karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+"thoda aage karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"aage karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"half screen karo": [
+        ("",lambda text: system_shortcut(text))
+    ],
+
+"screen chhota karo": [
+        ("done",lambda text: system_shortcut(text))
+    ],
+"pest karo": [
+        ("done",lambda text: system_shortcut(text))
+    ],
+
+}
+def system_shortcut(text):
+
+    query = text.lower()
+
+    if any(word in query for word in ("copy", "copy karo")):
+        pg.hotkey("ctrl", "c")
+
+    elif any(word in query for word in ("screenshot lo", "screenshot")):
+        img = pg.screenshot()
+        img.save("screenshot.png")
+        speak("screenshot save hogaya")
+
+    elif any(word in query for word in ("paste","pesh karo","pest karo","pest", "paste karo")):
+        pg.hotkey("ctrl", "v")
+
+    elif any(word in query for word in ("cut", "cut karo")):
+        pg.hotkey("ctrl", "x")
+
+    elif any(word in query for word in ("undo", "undo karo")):
+        pg.hotkey("ctrl", "z")
+
+    elif any(word in query for word in ("redo", "redo karo")):
+        pg.hotkey("ctrl", "y")
+
+    elif any(word in query for word in ("save", "save karo","sev","sev karo")):
+        pg.hotkey("ctrl", "s")
+
+    elif any(word in query for word in ("select all", "sab select karo")):
+        pg.hotkey("ctrl", "a")
+
+    elif any(word in query for word in ("find", "search karo")):
+        pg.hotkey("ctrl", "f")
+
+    elif any(word in query for word in ("new tab", "naya tab kholo")):
+        pg.hotkey("ctrl", "t")
+
+    elif any(word in query for word in ("tab band karo", "close tab")):
+        pg.hotkey("ctrl", "w")
+
+    elif any(word in query for word in ("next tab", "agla tab")):
+        pg.hotkey("ctrl", "tab")
+
+    elif any(word in query for word in ("previous tab", "pichla tab")):
+        pg.hotkey("ctrl", "shift", "tab")
+
+    elif any(word in query for word in ("refresh", "reload")):
+        pg.press("f5")
+
+    elif any(word in query for word in ("full screen", "fullscreen")):
+        pg.press("f11")
+
+    elif any(word in query for word in ("window band karo", "close window")):
+        pg.hotkey("alt", "f4")
+
+    elif any(word in query for word in ("desktop dikhao", "show desktop")):
+        pg.hotkey("win", "d")
+
+
+    elif any(word in query for word in ("run kholo", "run open")):
+        pg.hotkey("win", "r")
+
+    elif any(word in query for word in ("settings kholo", "settings open")):
+        pg.hotkey("win", "i")
+
+    elif any(word in query for word in ("computer lock", "lock pc")):
+        pg.hotkey("win", "l")
+
+    elif any(word in query for word in ("stop","stop karo","play","play karo")):
+        pg.press("space")
+
+    elif any(word in query for word in ("minimize karo","minimise karo","minimize","screen minimize karo")):
+        pg.hotkey("win", "down")
+    
+    elif any(word in query for word in ("scroll down","scroll karo","niche karo,or niche karo")):
+        pg.scroll(-500)
+    
+    elif any(word in query for word in ("scroll up","uper scroll karo","upar karo","or upar karo")):
+        print("ho raha hai")
+        pg.scroll(500)
+  
+    elif any(word in query for word in ("upar jao","top per jao","sabse upar jao")):
+        pg.scroll(10000000000)
+
+    elif any(word in query for word in ("niche jao","niche per jao","sab se niche jao")):
+        pg.scroll(-10000000000)
+     
+    elif any(word in query for word in ("aage karo","thoda aage karo")):
+        pg.hotkey("l")
+
+    elif any(word in query for word in ("piche karo","thoda piche karo")):
+        pg.hotkey("j")
+    
+    elif any(word in query for word in ("half screen karo","screen chota karo")):
+        pg.press("f") 
+
+    else:
+        print("Command nahi mila")
+def youtube_close():
+ for process in psutil.process_iter():
+    try:
+        youtube_app = process.name().lower()
+        if "youtube.exe" in youtube_app:
+            youtube_found = True
+            print("youtube app band kar diya")
+            os.system("taskkill /f /im youtube.exe")
+            break
+        else :
+           os.system("taskkill /f /im chrome.exe")
+           break
+    except:
+        pass
+def youtube_skip():
+   while True:
+     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+     img = pg.screenshot()
+     data = pytesseract.image_to_word(img , output_type = pytesseract.Output.DICT)
+     for i in range(len(data['text'])):
+       word = data['text'][i]
+def youtube_search(text):
+
+    query = text.lower()
+
+    query = query.replace("youtube pe search karo", "")
+    query = query.replace("youtube pe dekho", "")
+    query = query.strip()
+
+    driver = webdriver.Chrome(
+        service=Service(ChromeDriverManager().install())
+    )
+
+    driver.get("https://www.youtube.com")
+
+    time.sleep(3)
+
+    search_box = driver.find_element(By.NAME, "search_query")
+
+    search_box.send_keys(query)
+
+    search_box.send_keys(Keys.RETURN)
+
+    time.sleep(3)
+
+    videos = driver.find_elements(By.ID, "video-title")
+
+    if videos:
+        videos[0].click()
+        pg.sleep(5)
+        pg.press('f')
+        pg.sleep(5)
+        pg.press("tab")  
+        pg.press("enter")
+def type_wirte(text):
+    query = text.lower()
+    if "none" in query:
+        speak("could not understand")
+    else:
+        query = query.replace("type karo", "")
+        query = query.replace("sentence likho", "")
+        query = query.strip()
+        pg.write(query)
+
+def yolo(text):
+  model = YOLO("yolov8n.pt")
+  cap = cv2.VideoCapture(2)
+
+  while True:
+    ret, frame = cap.read()
+
+    if not ret:
+        break
+
+    # Detection
+    results = model(frame)
+
+    # Boxes aur labels draw karo
+    annotated_frame = results[0].plot()
+
+    cv2.imshow("YOLO Detection", annotated_frame)
+
+    # Q dabakar exit
+    if cv2.waitKey(1) & 0xFF == ord("q"):
+        break
+
+  cap.release()
+  cv2.destroyAllWindows()
